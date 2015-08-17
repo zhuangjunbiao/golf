@@ -16,8 +16,8 @@ $domain = env('DOMAIN');
 
 // API组
 Route::group([
-    'domain'        => "api.{$domain}",
-    'middleware'    => 'api.key'
+        'domain'        => "api.{$domain}",
+        'middleware'    => 'api.key'
     ], function() {
         // 控制器组
         Route::controllers([
@@ -27,9 +27,14 @@ Route::group([
 );
 
 // 后台组
-Route::group(['domain' => "golf.{$domain}"], function() {
-    // 控制器组
-    Route::controllers([
-        '/'         => 'Admin\IndexController'
-    ]);
-});
+Route::group([
+        'domain'        => "golf.{$domain}",
+        'middleware'    => 'rbac'
+    ], function() {
+        // 控制器组
+        Route::controllers([
+            'auth'      => 'Admin\AuthController',
+            '/'         => 'Admin\IndexController'
+        ]);
+    }
+);

@@ -1,5 +1,47 @@
 <?php
 
+if (!function_exists('ajax_return'))
+{
+    /**
+     * ajax返回
+     * @param mixed $data 数据对象
+     * @param int $status 状态
+     * <per>
+     *      0：失败
+     *      1：成功
+     *      -1：未登录
+     *      -2：无权限
+     * </per>
+     * @param null $msg 消息
+     * @param null $forward 跳转地址
+     * @return array
+     */
+    function ajax_return($data, $status=1, $msg=null, $forward=null)
+    {
+        $status = is_numeric($status) ? intval($status) : 0;
+        $msg = is_string($msg) ? $msg : null;
+
+        return [
+            'data'      => $data,
+            'status'    => $status,
+            'msg'       => $msg,
+            'forward'   => $forward
+        ];
+    }
+
+    /**
+     * ajax失败返回
+     * @param int $status
+     * @param null $msg
+     * @param null $forward
+     * @return array
+     */
+    function ajax_error($status=0, $msg=null, $forward=null)
+    {
+        return ajax_return(null, $status, $msg, $forward);
+    }
+}
+
 if (!function_exists('golf_return'))
 {
     /**

@@ -31,6 +31,7 @@ class Kernel extends HttpKernel
         'auth.basic' => AuthenticateWithBasicAuth::class,
         'guest' => Middleware\RedirectIfAuthenticated::class,
 
-        'api.key'   => Middleware\ApiKeyMiddleware::class
+        'api.key'   => Middleware\ApiKeyMiddleware::class,
+        'rbac'      => Middleware\RbacMiddleware::class,
     ];
 }
