@@ -2,6 +2,8 @@
 
 return [
 
+    'domain'    => env('DOMAIN'),
+
     'clients'   => [
         'android',
         'ios'

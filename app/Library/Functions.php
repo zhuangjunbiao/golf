@@ -67,7 +67,7 @@ if (!function_exists('golf_return'))
         $msgs = array(
             1001    => 'Unknow server error.',
             1002    => 'Resource not found.',
-            1003    => 'Invalid client key.',
+            1003    => 'Invalid key.',
             1004    => 'Param error.',
 
             2001    => 'The user has been banned.',

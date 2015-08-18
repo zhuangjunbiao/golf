@@ -15,21 +15,24 @@
 $domain = env('DOMAIN');
 
 // API组
-Route::group([
-        'domain'        => "api.{$domain}",
-        'middleware'    => 'api.key'
-    ], function() {
+Route::group(['domain' => "api.{$domain}", 'middleware' => 'api.key'], function() {
+
+    // API调试工具
+    Route::controller('test', 'Test\ApiController');
+
+    // 版本1
+    Route::group(['prefix' => 'v1'], function() {
         // 控制器组
         Route::controllers([
-            'user'     => 'Api\UserController'
+            'user'     => 'Api1\UserController'
         ]);
-    }
-);
+    });
+});
 
 // 后台组
 Route::group([
         'domain'        => "golf.{$domain}",
-        'middleware'    => 'rbac'
+        'middleware'    => ['csrf', 'rbac']
     ], function() {
         // 控制器组
         Route::controllers([

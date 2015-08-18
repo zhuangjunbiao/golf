@@ -12,6 +12,8 @@ class ApiKeyMiddleware
      * @var array
      */
     protected $except = [
+        'test',
+        'test/key'
     ];
 
     /**

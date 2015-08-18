@@ -18,7 +18,6 @@ class Kernel extends HttpKernel
         \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-        \App\Http\Middleware\VerifyCsrfToken::class,
         \App\Http\Middleware\ConstMiddleware::class
     ];
 
@@ -31,6 +30,8 @@ class Kernel extends HttpKernel
         'auth' => Middleware\Authenticate::class,
         'auth.basic' => AuthenticateWithBasicAuth::class,
         'guest' => Middleware\RedirectIfAuthenticated::class,
+
+        'csrf'      => Middleware\VerifyCsrfToken::class,
 
         'api.key'   => Middleware\ApiKeyMiddleware::class,
         'rbac'      => Middleware\RbacMiddleware::class,
