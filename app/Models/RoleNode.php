@@ -25,7 +25,7 @@ class RoleNode extends Model
      */
     public function getRoleNodes($rid)
     {
-        $rows = $this->qSelect('RN.*', 'N.name')
+        $rows = $this->qSelect('RN.*', 'N.nname')
             ->fromAlias('RN')
             ->leftJoinNode()
             ->qWhere('RN.rid', '=', $rid)
@@ -41,7 +41,7 @@ class RoleNode extends Model
      */
     private function leftJoinNode($status=1, $type=3)
     {
-        $N = Node::$tableName;
+        $N = Node::$tableName.' AS N';
         $this->q()
             ->leftJoin($N, function(JoinClause $join) use ($status, $type) {
                 $join->on('N.nid', '=', 'RN.nid');

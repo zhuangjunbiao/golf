@@ -158,7 +158,7 @@ class OAuth {
      */
     private function nodes()
     {
-        $rid = $this->user->getAttribute('rid');
+        $rid = $this->user->getAttribute('uid');
         $key = 'rbac_role_node';
         $cache = Cache::get($key);
         if (empty($cache) || !isset($cache[$rid]))
@@ -168,8 +168,22 @@ class OAuth {
             {
                 return [];
             }
-dd($nodes);
-            $cache[$rid] = $nodes;
+
+            $tmp = array();
+            if ($nodes[0]['nid'] == '*')
+            {
+                array_push($tmp, '*');
+            }
+            else
+            {
+                foreach ($nodes as $node)
+                {
+                    array_push($tmp, $node['nname']);
+                }
+
+            }
+
+            $cache[$rid] = $tmp;
             Cache::put($key, $cache, 24*60);
         }
 
@@ -205,13 +219,14 @@ dd($nodes);
         }
 
         // 密码错误
-        if ($user->getAttribute('password') != bcrypt($password))
+        if ($user->getAttribute('password') != md5($password))
         {
             return false;
         }
 
         // 更新登录信息
-        dd($user);
+        $user->setAttribute('login_time', REQUEST_TIME);
+        $user->save();
 
         // 写入session
         Session::put($this->userSession, $user);

@@ -24,7 +24,7 @@ class Users extends Model
      */
     public function getUserInfo($uid_or_user_name)
     {
-        $this->qSelect('U.*')
+        $this->qSelect('U.*', 'RU.rid')
             ->fromAlias('U')
             ->leftJoinRoleUser();
 
