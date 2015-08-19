@@ -26,6 +26,60 @@ class UserController extends Controller
     }
 
     /**
+     * 重置密码
+     *
+     * 请求方式：
+     *      POST
+     *
+     * 地址：
+     *      SERVER/v1/user/reset-password
+     *
+     * 参数：
+     *      device-设备号，必需
+     *      sms_code-验证码，必需
+     *      phone-手机号，必需
+     *      new_password-当前密码，必需
+     *      password-新密码，必需6-18个字符
+     *
+     * 自定义错误码：
+     *      3001-修改失败
+     *
+     * @param Request $request
+     * @param OAuth $auth
+     * @return array
+     * @throws \Exception
+     */
+    public function postResetPassword(Request $request, OAuth $auth)
+    {
+        $this->params($request, [
+            'device'        => ['required'],
+            'sms_code'      => ['required', "sms_code:{$request->input('phone')},{$request->input('device')}"],
+            'phone'         => ['required', 'exists:users,phone', 'user_deny'],
+            'now_password'  => ['required', "password:phone,{$request->input('phone')}"],
+            'password'      => ['required', 'length:6,18']
+        ]);
+
+        try
+        {
+            if (!$auth->resetPassword($request))
+            {
+                return golf_error(3001);
+            }
+
+            return golf_return(null);
+        }
+        catch (\Exception $e)
+        {
+            if (config('app.debug'))
+            {
+                throw $e;
+            }
+
+            return golf_error(1001);
+        }
+    }
+
+    /**
      * 用户登录
      *
      * 请求方式：
@@ -57,6 +111,7 @@ class UserController extends Controller
             $user = $auth->getUser()->toArray();
             unset($user['rid']);
             unset($user['password']);
+
             return golf_return($user);
         }
         else
@@ -81,9 +136,6 @@ class UserController extends Controller
      *      phone-手机号，唯一
      *      password-密码，6-18个字符
      *
-     * 自定义错误码：
-     *      3001-验证码错误
-     *
      * @param Request $request
      * @param OAuth $auth
      * @return array
@@ -91,25 +143,19 @@ class UserController extends Controller
      */
     public function postRegister(Request $request, OAuth $auth)
     {
-
         $this->params($request, [
-            'sms_code'  => ['required'],
+            'sms_code'  => ['required', "sms_code:{$request->input('phone')},{$request->input('device')}"],
             'device'    => ['required'],
             'user_name' => ['required', 'uname_deny', 'length:4,18'],
             'phone'     => ['required', 'phone', 'unique:users'],
-            'password'  => ['required', 'length:6-18']
+            'password'  => ['required', 'length:6,18']
         ]);
-
-        // 验证码错误
-        if (!$auth->verifySMSCode($request))
-        {
-            return golf_error(3001, Lang::get('validation.custom.sms_code.error'));
-        }
 
         try
         {
             $user = $auth->register($request);
             unset($user['password']);
+
             return golf_return($user);
         }
         catch (\Exception $e)
@@ -118,6 +164,7 @@ class UserController extends Controller
             {
                 throw $e;
             }
+
             return golf_error(1001);
         }
     }

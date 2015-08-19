@@ -253,13 +253,13 @@ class OAuth {
     /**
      * 验证短信验证码
      *
-     * @param  \Illuminate\Http\Request $request
+     * @param $phone
+     * @param $code
+     * @param $device
      * @return bool
      */
-    public function verifySMSCode($request)
+    public static function verifySMSCode($phone, $code, $device)
     {
-        $phone = $request->input('phone');
-        $code = $request->input('sms_code');
         $sms_verify = 'sms_verify';
         $d_key = 'sms_record_device';
         $p_key = 'sms_record_phone';
@@ -279,7 +279,6 @@ class OAuth {
         Cache::forever($sms_verify, $cache);
 
         // 删除设备号缓存
-        $device = $request->input('device');
         $dCache = Cache::has($d_key) ? (array) Cache::get($d_key) : array();
         unset($dCache[md5($device)]);
         Cache::forever($d_key, $dCache);
@@ -413,7 +412,7 @@ class OAuth {
      * @param $password
      * @return string
      */
-    public function password($password)
+    public static function password($password)
     {
         return md5(config('global.password_prefix') . $password);
     }
@@ -426,5 +425,10 @@ class OAuth {
     public function getUser()
     {
         return $this->user;
+    }
+
+    // TODO 修改密码逻辑处理
+    public function resetPassword($request)
+    {
     }
 }

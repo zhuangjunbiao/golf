@@ -9,9 +9,85 @@
 namespace App\Validation;
 
 use App\Models\Options;
+use App\Models\Users;
+use App\Services\OAuth;
 use \Illuminate\Validation\Validator;
 
 class CustomValidator extends Validator {
+
+    /**
+     * 验证短信验证码
+     *
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
+     */
+    public function validateSmsCode($attribute, $value, $parameters)
+    {
+        if (count($parameters) < 2)
+        {
+            return false;
+        }
+
+        return OAuth::verifySMSCode($parameters[0], $value, $parameters[1]);
+    }
+
+    /**
+     * 验证密码是否正确
+     *
+     * @param $attribute
+     * @param $value
+     * @param $parameters
+     * @return bool
+     */
+    public function validatePassword($attribute, $value, $parameters)
+    {
+        if (count($parameters) < 2)
+        {
+            return false;
+        }
+
+        // 获取用户信息
+        $user = Users::model()->getUserInfo($parameters[1], $parameters[0]);
+        if (empty($user))
+        {
+            return false;
+        }
+
+        return $user->getAttribute('password') == OAuth::password($value);
+    }
+
+    /**
+     * 验证用户是否被删除
+     *
+     * @param $attribute
+     *      可选值：phone，uid
+     * @param $value
+     * @return bool
+     */
+    public function validateUserDeny($attribute, $value)
+    {
+        if ($attribute == 'phone')
+        {
+            $user = Users::model()->getUserInfo($value);
+        }
+        elseif ($attribute == 'uid')
+        {
+            $user = Users::model()->getUserInfo($value, 'uid');
+        }
+        else
+        {
+            return false;
+        }
+
+        if (empty($user) || $user->getAttribute('status') == 2)
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     /**
      * 验证字符串或数组长度
@@ -74,8 +150,16 @@ class CustomValidator extends Validator {
      */
     public function replaceLength($message, $attribute, $rule, $parameters)
     {
-        $message = str_replace(':min', $parameters[0], $message);
-        $message = str_replace(':max', $parameters[1], $message);
+        if (isset($parameters[0]))
+        {
+            $message = str_replace(':min', $parameters[0], $message);
+        }
+
+        if (isset($parameters[1]))
+        {
+            $message = str_replace(':max', $parameters[1], $message);
+        }
+
         return $message;
     }
 

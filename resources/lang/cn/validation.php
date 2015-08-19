@@ -5,7 +5,9 @@ return [
     'custom' => [
         'phone' => [
             'required'  => '请输入手机号',
-            'unique'    => '手机号已存在，请重新输入'
+            'unique'    => '手机号已存在，请重新输入',
+            'exists'    => '账号不存在',
+            'user_deny' => '该账号已被禁用'
         ],
 
         'device'    => [
@@ -24,9 +26,13 @@ return [
             'length'        => '密码长度为:min-:max个字符',
         ],
 
+        'now_password'  => [
+            'password'      => '原密码错误'
+        ],
+
         'sms_code'  => [
             'required'      => '请输入验证码',
-            'error'         => '验证码错误'
+            'sms_code'      => '验证码错误'
         ]
     ],
 
