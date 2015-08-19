@@ -17,9 +17,7 @@
             <label class="control-label col-md-2 col-sm-2" for="inputAPI">API</label>
             <div class="col-md-5 col-sm-8">
                 <div class="input-group">
-                    <span class="input-group-addon" id="protocol">http://</span>
-                    <input type="text" class="form-control" id="inputAPI" value="api">
-                    <div class="input-group-addon" id="domain">.{{config('global.domain')}}/</div>
+                    <span class="input-group-addon" id="protocol">http://{{config('global.api_domain')}}/</span>
                     <select class="form-control" id="version">
                         @foreach($version as $v)
                             <option value="{{$v}}">{{$v}}</option>
@@ -34,7 +32,7 @@
             <div class="col-md-5 col-sm-8">
                 <select class="form-control" id="method">
                     @foreach($method as $m)
-                        <option value="{{$m}}">{{$m}}</option>
+                        <option value="{{$m}}" @if($m == $__method) selected @endif>{{$m}}</option>
                     @endforeach
                 </select>
             </div>
@@ -52,9 +50,16 @@
         </div>
 
         <div class="form-group">
+            <label class="col-md-2 col-sm-2 control-label" for="inputTS">时间戳</label>
+            <div class="col-md-5 col-sm-8">
+                <input type="text" class="form-control disabled" id="inputTS" name="ts" value="{{$ts}}">
+            </div>
+        </div>
+
+        <div class="form-group">
             <label class="col-md-2 col-sm-2 control-label" for="inputURL">详细地址</label>
             <div class="col-md-5 col-sm-8">
-                <input type="text" class="form-control" id="inputURL" placeholder="config/init">
+                <input type="text" class="form-control" id="inputURL" placeholder="config/init" value="{{$__url}}">
             </div>
         </div>
 
@@ -135,8 +140,13 @@
 <script src="//cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 <script>
     $(function() {
+        setInterval(function() {
+            var ipt = $('#inputTS');
+            ipt.val(parseInt(ipt.val()) + 5);
+        }, 5000);
+
         function setDetailURL() {
-            var url = $('#protocol').html()+$('#inputAPI').val()+$('#domain').html()+$('#version').val()+'/'+$('#inputURL').val();
+            var url = $('#protocol').html()+$('#version').val()+'/'+$('#inputURL').val();
             $('#detailURL').html(url);
             return url;
         }

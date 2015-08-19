@@ -1,9 +1,115 @@
 <?php
 
+if (!function_exists('fix_apps'))
+{
+    /**
+     * app键值转换
+     *
+     * @param $value
+     * @param bool|true $inversion
+     * @return mixed
+     */
+    function fix_apps($value, $inversion=true)
+    {
+        $apps = config('global.apps');
+        if ($inversion)
+        {
+            return array_search($value, $apps);
+        }
+        else
+        {
+            return $apps[$value];
+        }
+    }
+}
+
+if (!function_exists('console'))
+{
+    /**
+     * 打印日志
+     *
+     * @param $data
+     */
+    function console($data)
+    {
+        \App\Library\Console::log($data);
+    }
+}
+
+if (!function_exists('rand_str'))
+{
+    /**
+     * 产生随机字符串
+     *
+     * @param int $length
+     * @param int $type
+     * @return string
+     */
+    function rand_str($length=5, $type=0)
+    {
+        // 去除比较相似的ilo01ILO
+        $number = '23456789';
+        $letter = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ';
+        if ($type == 0)
+        {
+            // 纯数字补充01
+            $chars = $number.'01';
+        }
+        elseif ($type == 1)
+        {
+            // 纯字母
+            $chars = $letter.'iloILO';
+        }
+        else
+        {
+            // 混合
+            $chars = $number.$letter;
+        }
+
+        mt_srand((double)microtime() * 1000000 * getmypid());
+        $return = '';
+        while (strlen($return) < $length)
+        {
+            $return .= substr($chars, (mt_rand() % strlen($chars)), 1);
+        }
+
+        return $return;
+    }
+}
+
+if (!function_exists('url_plugin'))
+{
+    /**
+     * 插件url生成
+     *
+     * @param $source
+     * @return string
+     */
+    function url_plugin($source)
+    {
+        return url('/static/plugins'). '/' . $source;
+    }
+}
+
+if (!function_exists('url_static'))
+{
+    /**
+     * 静态文件url生成
+     *
+     * @param $source
+     * @return string
+     */
+    function url_static($source)
+    {
+        return url('/static'). '/' . $source;
+    }
+}
+
 if (!function_exists('ajax_return'))
 {
     /**
      * ajax返回
+     *
      * @param mixed $data 数据对象
      * @param int $status 状态
      * <per>
@@ -55,6 +161,7 @@ if (!function_exists('golf_return'))
      *      1002：找不到资源；
      *      1003：客户端签名错误；
      *      1004：参数错误；
+     *      1005：时间校验失败；
      *      2001：用户封禁；
      *      2002：用户输入错误；
      *      2003：未知客户端；
@@ -69,6 +176,7 @@ if (!function_exists('golf_return'))
             1002    => 'Resource not found.',
             1003    => 'Invalid key.',
             1004    => 'Param error.',
+            1005    => 'The timestamp error.',
 
             2001    => 'The user has been banned.',
             2002    => 'The user input error.',
@@ -81,7 +189,8 @@ if (!function_exists('golf_return'))
         return [
             'data'      => $data,
             'errcode'   => is_numeric($errcode) ? intval($errcode) : 1001,
-            'msg'       => $msg
+            'msg'       => $msg,
+            'ts'        => time()
         ];
     }
 

@@ -144,6 +144,8 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
+        // 新增组件
+        \Vinelab\Http\HttpServiceProvider::class,
     ],
 
     /*

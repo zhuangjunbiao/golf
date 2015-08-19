@@ -7,19 +7,35 @@ use App\Http\Controllers\Controller;
 
 class ApiController extends Controller
 {
-    public function getIndex(Request $request)
+
+    public function getIndex()
+    {
+        return fix_apps('comment');
+    }
+
+    /**
+     * API调试工具
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function getApi(Request $request)
     {
         $data = array(
-            'params'    => $request->all(),
+            'params'    => $request->except(['__url', '__method']),
             'version'   => ['v1'],
             'method'    => ['GET', 'POST'],
-            'client'    => ['iOS', 'Android'],
+            'ts'        => REQUEST_TIME,
+            '__url'     => $request->input('__url'),
+            '__method'  => strtoupper($request->input('__method')),
+            'client'    => ['ios', 'android'],
         );
         return view('test.api', $data);
     }
 
     /**
      * 生成key
+     *
      * @param Request $request
      * @return array
      */

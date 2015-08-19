@@ -13,7 +13,9 @@ class ApiKeyMiddleware
      */
     protected $except = [
         'test',
-        'test/key'
+        'test/api',
+        'test/key',
+        'config/init'
     ];
 
     /**
@@ -35,6 +37,12 @@ class ApiKeyMiddleware
         if (!$this->verifyClient($request))
         {
             return golf_error(2003);
+        }
+
+        // 时间校验
+        if (!$this->verifyTime($request))
+        {
+            return golf_error(1005);
         }
 
         // 验证key
@@ -110,5 +118,22 @@ class ApiKeyMiddleware
         }
 
         return false;
+    }
+
+    /**
+     * 验证时间戳
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return bool
+     */
+    private function verifyTime($request)
+    {
+        $ts = $request->input('ts');
+        if (abs(REQUEST_TIME - $ts) > 60)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

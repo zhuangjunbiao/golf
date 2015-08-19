@@ -19,27 +19,27 @@ class Users extends Model
 
     /**
      * 获取用户信息
-     * @param $uid_or_user_name
+     * @param $value
+     * @param string $field
      * @return \Illuminate\Database\Eloquent\Model|null|static
      */
-    public function getUserInfo($uid_or_user_name)
+    public function getUserInfo($value, $field='phone')
     {
         $this->qSelect('U.*', 'RU.rid')
             ->fromAlias('U')
             ->leftJoinRoleUser();
 
-        // 判断是uid查找还是user_name查找
-        if (is_int($uid_or_user_name))
+        if ($field == 'phone')
         {
-            $this->qWhere('U.uid', '=', $uid_or_user_name);
+            $this->qWhere('U.phone', '=', $value);
         }
-        elseif (is_string($uid_or_user_name))
+        elseif ($field == 'uid')
         {
-            $this->qWhere('U.user_name', '=', $uid_or_user_name);
+            $this->qWhere('U.uid', '=', $value);
         }
         else
         {
-            return false;
+            return null;
         }
 
         $row = $this->qFirst();

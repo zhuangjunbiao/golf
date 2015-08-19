@@ -9,6 +9,17 @@ use Lang;
 
 class AuthController extends Controller
 {
+
+    public function __construct()
+    {
+        // 游客模式能访问的接口
+        $this->middleware('guest', ['only' => [
+            'getForgetPassword',
+            'postForgetPassword',
+            'postSms'
+        ]]);
+    }
+    
     /**
      * 登录
      *
@@ -40,17 +51,40 @@ class AuthController extends Controller
     }
 
     /**
-     * 重置密码
+     * 退出登录
+     *
+     * @param Request $request
+     * @param OAuth $auth
+     * @return array|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function getLogout(Request $request, OAuth $auth)
+    {
+        return $auth->logout()->defaultGateway($request);
+    }
+
+    /**
+     * 忘记密码
      *
      * @return \Illuminate\View\View
      */
-    public function getResetPassword()
+    public function getForgetPassword()
     {
-        return view('admin.auth.reset_password');
+        return view('admin.auth.forget_password');
     }
 
-    public function postResetPassword(Request $request, OAuth $auth)
+    public function postForgetPassword(Request $request, OAuth $auth)
     {
-        dd($request->all());
+    }
+
+    public function postSms(Request $request, OAuth $auth)
+    {
+        if ($auth->sendSMS($request))
+        {
+            return ajax_return($auth->getSMSResidueTime($request), 1, '');
+        }
+        else
+        {
+            return ajax_error(0, '发送失败');
+        }
     }
 }

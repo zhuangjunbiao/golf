@@ -8,10 +8,13 @@
 
 namespace App\Services;
 
+use App\Library\Console;
+use App\Library\SMS;
 use App\Models\RoleNode;
 use App\Models\Users;
 use Session;
 use Cache;
+use Lang;
 
 class OAuth {
 
@@ -21,7 +24,7 @@ class OAuth {
      * @var array
      */
     protected $except = [
-
+        'auth/forget-password'
     ];
 
     /**
@@ -124,7 +127,8 @@ class OAuth {
      */
     public function permissions($request)
     {
-        foreach ($this->nodes() as $node)
+        $nodes = array_merge($this->nodes(), $this->getExcept());
+        foreach ($nodes as $node)
         {
             if ($request->is($node) || $node == '*')
             {
@@ -197,7 +201,7 @@ class OAuth {
      */
     public function isDefaultGateway($request)
     {
-        return in_array($request->path(), $this->getExcept());
+        return $request->path() == $this->default_gateway;
     }
 
     /**
@@ -208,9 +212,9 @@ class OAuth {
      */
     public function login($request)
     {
-        $user_name = $request->input('user_name');
+        $phone = $request->input('phone');
         $password = $request->input('password');
-        $user = Users::model()->getUserInfo($user_name);
+        $user = Users::model()->getUserInfo($phone);
 
         // 用户不存在
         if (empty($user))
@@ -219,7 +223,7 @@ class OAuth {
         }
 
         // 密码错误
-        if ($user->getAttribute('password') != md5($password))
+        if ($user->getAttribute('password') != $this->password($password))
         {
             return false;
         }
@@ -227,10 +231,200 @@ class OAuth {
         // 更新登录信息
         $user->setAttribute('login_time', REQUEST_TIME);
         $user->save();
+        $this->user = $user;
 
         // 写入session
         Session::put($this->userSession, $user);
 
         return true;
+    }
+
+    /**
+     * 退出登录
+     *
+     * @return $this
+     */
+    public function logout()
+    {
+        Session::forget($this->userSession);
+        return $this;
+    }
+
+    /**
+     * 验证短信验证码
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return bool
+     */
+    public function verifySMSCode($request)
+    {
+        $phone = $request->input('phone');
+        $code = $request->input('sms_code');
+        $sms_verify = 'sms_verify';
+        $d_key = 'sms_record_device';
+        $p_key = 'sms_record_phone';
+        $cache = Cache::get($sms_verify);
+        $key = md5($phone);
+
+        if (empty($phone) || empty($code) || !isset($cache[$key]))
+        {
+            return false;
+        }
+
+        $verify = $cache[$key];
+        $outtime = config('global.sms_out_time') * 60;
+
+        // 删除验证码缓存
+        unset($cache[$key]);
+        Cache::forever($sms_verify, $cache);
+
+        // 删除设备号缓存
+        $device = $request->input('device');
+        $dCache = Cache::has($d_key) ? (array) Cache::get($d_key) : array();
+        unset($dCache[md5($device)]);
+        Cache::forever($d_key, $dCache);
+
+        // 删除手机号缓存
+        $pCache = Cache::has($p_key) ? (array) Cache::get($p_key) : array();
+        unset($pCache[md5($phone)]);
+        Cache::forever($p_key, $pCache);
+
+        return ($code == $verify['code']) && ($verify['start'] + $outtime > REQUEST_TIME);
+    }
+
+    /**
+     * 发送验证短信
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return bool
+     * @throws \Exception
+     */
+    public function sendVerifySMS($request)
+    {
+        // 距离下次获取大于3秒，则不给获取
+        if ($this->getSMSResidueTime($request) > 3)
+        {
+            return false;
+        }
+
+        $phone = $request->input('phone');
+        $device = $request->input('device');
+        $code = rand_str(5);
+        $content = Lang::get('global.sms_verify_code', ['code' => $code, 'minute' => config('global.sms_out_time')]);
+
+        // 调试模式下只打印短信，不发送信息
+        if (config('app.debug'))
+        {
+            Console::log("{$phone} ： {$code}");
+        }
+
+        SMS::send($phone, $content);
+
+        // 写入缓存
+        $d_key = 'sms_record_device';
+        $p_key = 'sms_record_phone';
+        $sms_verify = 'sms_verify';
+        $time = time();// 这里使用time()更精准
+
+        // 验证码写入缓存
+        $sCache = Cache::has($sms_verify) ? (array) Cache::get($sms_verify) : array();
+        $sCache[md5($phone)] = array(
+            'start' => $time,
+            'code'  => $code
+        );
+        Cache::forever($sms_verify, $sCache);
+
+        // 设备号写入缓存
+        $dCache = Cache::has($d_key) ? (array) Cache::get($d_key) : array();
+        $dCache[md5($device)] = $time;
+        Cache::forever($d_key, $dCache);
+
+        // 手机号写入缓存
+        $pCache = Cache::has($p_key) ? (array) Cache::get($p_key) : array();
+        $pCache[md5($phone)] = $time;
+        Cache::forever($p_key, $pCache);
+
+        return true;
+    }
+
+    /**
+     * 获取短信的剩余时间（秒）
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return int
+     */
+    public function getSMSResidueTime($request)
+    {
+        // 调试模式下，剩余时间为0
+        if (config('app.debug') && $request->has('debug'))
+        {
+            return 0;
+        }
+
+        // 同部设备或同个手机号
+        $phone = md5($request->input('phone'));
+        $device = md5($request->input('device'));
+        $d_key = 'sms_record_device';
+        $p_key = 'sms_record_phone';
+        $d_time = 0;
+        $p_time = 0;
+
+        // 设备剩余时间
+        if (isset(Cache::get($d_key)[$device]))
+        {
+            $d_time = (config('global.sms_gain_time') * 60) - (REQUEST_TIME - Cache::get($d_key)[$device]);
+        }
+
+        // 手机剩余时间
+        if (isset(Cache::get($p_key)[$phone]))
+        {
+            $p_time = (config('global.sms_gain_time') * 60) - (REQUEST_TIME - Cache::get($p_key)[$phone]);
+        }
+
+        if ($d_time == 0 && $p_time == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return $d_time > $p_time ? $d_time : $p_time;
+        }
+    }
+
+    /**
+     * 用户注册
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return array
+     */
+    public function register($request)
+    {
+        $attributes = $request->only(['password', 'user_name', 'phone']);
+        $attributes['password'] = $this->password($attributes['password']);
+        $attributes['form'] = fix_apps($request->input('client'));
+        $attributes['create_time'] = REQUEST_TIME;
+        $user = Users::create($attributes)->toArray();
+        return $user;
+    }
+
+    /**
+     * 密码生成
+     *
+     * @param $password
+     * @return string
+     */
+    public function password($password)
+    {
+        return md5(config('global.password_prefix') . $password);
+    }
+
+    /**
+     * 获取用户
+     *
+     * @return Users|null
+     */
+    public function getUser()
+    {
+        return $this->user;
     }
 }
