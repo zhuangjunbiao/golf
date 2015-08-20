@@ -27,7 +27,6 @@ class RbacMiddleware
      */
     public function handle($request, Closure $next)
     {
-
         if ($this->auth->isLogin())
         {
             // 已登录且访问默认网关
@@ -40,13 +39,13 @@ class RbacMiddleware
             // 验证访问权限
             if (!$this->auth->permissions($request))
             {
+                $this->auth->logout();
                 return $this->auth->deny($request);
             }
         }
         else
         {
-            // 未登录且不是访问默认网关
-            if (!$this->auth->isDefaultGateway($request))
+            if (!$this->auth->permissions($request))
             {
                 return $this->auth->defaultGateway($request);
             }

@@ -2,24 +2,49 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
 use App\Services\OAuth;
+use App\Validation\CustomValidator;
 use Illuminate\Http\Request;
 use Lang;
+use Session;
 
 class AuthController extends Controller
 {
 
     public function __construct()
     {
-        // 游客模式能访问的接口
+        // 游客模式能访问的接口(登录状态不可访问)
         $this->middleware('guest', ['only' => [
             'getForgetPassword',
             'postForgetPassword',
             'postSms'
         ]]);
+
+        // 登录状态才能访问的接口
+        $this->middleware('auth', ['only' => [
+            'getModifyPassword',
+            'postModifyPassword'
+        ]]);
+
+        // 添加自定义验证规则
+        \Validator::resolver(function($translator, $data, $rules, $messages)
+        {
+            return new CustomValidator($translator, $data, $rules, $messages);
+        });
     }
-    
+
+    // TODO 修改密码
+    public function getModifyPassword(Request $request)
+    {
+
+    }
+
+    // TODO 修改密码逻辑
+    public function postModifyPassword(Request $request)
+    {
+
+    }
+
     /**
      * 登录
      *
@@ -69,22 +94,134 @@ class AuthController extends Controller
      */
     public function getForgetPassword()
     {
+        if (Session::get('forget_password') == Session::getId() && Session::has('phone'))
+        {
+            return redirect(url('/auth/set-password'));
+        }
+
         return view('admin.auth.forget_password');
     }
 
-    public function postForgetPassword(Request $request, OAuth $auth)
+    /**
+     * 忘记密码逻辑处理
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function postForgetPassword(Request $request)
     {
+        if (Session::get('forget_password') == Session::getId() && Session::has('phone'))
+        {
+            return redirect(url('/auth/set-password'));
+        }
+
+        $this->validate($request, [
+            'sms_code'  => ['required', "sms_code:{$request->input('phone')},{$request->input('device')}"],
+            'phone'     => ['required', 'exists:users,phone', 'user_deny']
+        ]);
+
+        Session::put('forget_password', Session::getId());
+        Session::put('phone', $request->input('phone'));
+        return redirect(url('/auth/set-password'));
     }
 
-    public function postSms(Request $request, OAuth $auth)
+    /**
+     * 重置密码
+     *
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|\Illuminate\View\View
+     */
+    public function getSetPassword()
     {
-        if ($auth->sendSMS($request))
+        if (!(Session::get('forget_password') == Session::getId() && Session::has('phone')))
         {
-            return ajax_return($auth->getSMSResidueTime($request), 1, '');
+            return redirect(url('/auth/forget-password'));
         }
-        else
+
+        return view('admin.auth.set_password');
+    }
+
+    /**
+     * 重置密码逻辑
+     *
+     * @param Request $request
+     * @param OAuth $auth
+     * @return $this|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function postSetPassword(Request $request, OAuth $auth)
+    {
+        if (!(Session::get('forget_password') == Session::getId() && Session::has('phone')))
         {
-            return ajax_error(0, '发送失败');
+            return redirect(url('/auth/forget-password'));
+        }
+
+        $this->validate($request, [
+            'password'      => ['required', 'length:6,18', 'confirmed']
+        ]);
+
+        $phone = Session::get('phone');
+        $password = $request->input('password');
+
+
+        try
+        {
+            if ($auth->setPassword($phone, $password))
+            {
+                Session::forget('phone');
+                Session::forget('forget_password');
+
+                // 重置成功
+                return redirect()->to(url('/auth/login'))->withInput(['msg' => Lang::get('admin.auth.reset.success')]);
+            }
+            else
+            {
+                throw new \Exception;
+            }
+        }
+        catch (\Exception $e)
+        {
+            // 重置失败
+            return redirect()->back()->withErrors([Lang::get('admin.auth.reset.failed')]);
+        }
+    }
+
+    /**
+     * 发送验证码
+     *
+     * @param Request $request
+     * @param OAuth $auth
+     * @return array
+     * @throws \Exception
+     */
+    public function getSmsCode(Request $request, OAuth $auth)
+    {
+        $this->ajaxValidate($request, [
+            'phone'     => ['required', 'phone', 'exists:users,phone', 'user_deny']
+        ], 0);
+
+        try
+        {
+            if ($auth->sendVerifySMS($request))
+            {
+                return ajax_return($auth->getSMSResidueTime($request));
+            }
+            else
+            {
+                // 距离下次获取短信还有second秒
+                $second = $auth->getSMSResidueTime($request);
+                return ajax_return($second, -3, Lang::get('validation.sms.expiration_time', [
+                    'second'   => $second
+                ]));
+            }
+        }
+        catch (\Exception $e)
+        {
+            if (config('app.debug'))
+            {
+                throw $e;
+            }
+
+            // 短信发送失败
+            return ajax_error(0, Lang::get('admin.auth.sms_send_failed'));
         }
     }
 }

@@ -24,6 +24,7 @@ return [
         'password'  => [
             'required'      => '请输入密码',
             'length'        => '密码长度为:min-:max个字符',
+            'confirmed'     => '两次密码不一致'
         ],
 
         'now_password'  => [

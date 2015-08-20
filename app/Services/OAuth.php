@@ -1,12 +1,4 @@
-<?php
-/**
- * Created by PhpStorm.
- * User: Lenbo
- * Date: 2015/8/17
- * Time: 14:56
- */
-
-namespace App\Services;
+<?php namespace App\Services;
 
 use App\Library\Console;
 use App\Library\SMS;
@@ -24,7 +16,10 @@ class OAuth {
      * @var array
      */
     protected $except = [
-        'auth/forget-password'
+        'auth/forget-password',
+        'auth/sms-code',
+        'auth/set-password',
+        'auth/modify-password'
     ];
 
     /**
@@ -54,12 +49,20 @@ class OAuth {
     private $userSession = 'user';
 
     /**
+     * 重复获取短信时间(秒)
+     *
+     * @var int
+     */
+    private $sms_gain_time = 60;
+
+    /**
      * 构造方法
      */
     function __construct()
     {
         $this->user = Session::get($this->userSession);
         $this->default_gateway = config('global.rbac.default_gateway');
+        $this->sms_gain_time = config('global.sms_gain_time') * 60;
         array_push($this->except, $this->default_gateway);
     }
 
@@ -162,7 +165,7 @@ class OAuth {
      */
     private function nodes()
     {
-        $rid = $this->user->getAttribute('uid');
+        $rid = empty($this->user) ? null : $this->user->getAttribute('rid');
         $key = 'rbac_role_node';
         $cache = Cache::get($key);
         if (empty($cache) || !isset($cache[$rid]))
@@ -306,8 +309,17 @@ class OAuth {
             return false;
         }
 
+        // TODO 一小时内只能发10条信息
+
         $phone = $request->input('phone');
         $device = $request->input('device');
+
+        // device针对客户端，如果为空，则使用session id
+        if (empty($device))
+        {
+            $device = $request->getSession()->getId();
+        }
+
         $code = rand_str(5);
         $content = Lang::get('global.sms_verify_code', ['code' => $code, 'minute' => config('global.sms_out_time')]);
 
@@ -362,7 +374,15 @@ class OAuth {
 
         // 同部设备或同个手机号
         $phone = md5($request->input('phone'));
-        $device = md5($request->input('device'));
+        $device = $request->input('device');
+
+        // device针对客户端，如果为空，则使用session id
+        if (empty($device))
+        {
+            $device = $request->getSession()->getId();
+        }
+
+        $device = md5($device);
         $d_key = 'sms_record_device';
         $p_key = 'sms_record_phone';
         $d_time = 0;
@@ -371,13 +391,15 @@ class OAuth {
         // 设备剩余时间
         if (isset(Cache::get($d_key)[$device]))
         {
-            $d_time = (config('global.sms_gain_time') * 60) - (REQUEST_TIME - Cache::get($d_key)[$device]);
+            $d_time = $this->sms_gain_time - (REQUEST_TIME - Cache::get($d_key)[$device]);
+            $d_time = $d_time > $this->sms_gain_time ? $this->sms_gain_time : $d_time;
         }
 
         // 手机剩余时间
         if (isset(Cache::get($p_key)[$phone]))
         {
-            $p_time = (config('global.sms_gain_time') * 60) - (REQUEST_TIME - Cache::get($p_key)[$phone]);
+            $p_time = $this->sms_gain_time - (REQUEST_TIME - Cache::get($p_key)[$phone]);
+            $p_time = $p_time > $this->sms_gain_time ? $this->sms_gain_time : $p_time;
         }
 
         if ($d_time == 0 && $p_time == 0)
@@ -427,8 +449,30 @@ class OAuth {
         return $this->user;
     }
 
-    // TODO 修改密码逻辑处理
+    /**
+     * 修改密码
+     *
+     * @param  \Illuminate\Http\Request $request
+     * @return bool
+     */
     public function resetPassword($request)
     {
+        $phone = $request->input('phone');
+        $password = $this->password($request->input('password'));
+        return Users::where('phone', '=', $phone)->update(['password' => $password]);
+    }
+
+    /**
+     * 设置密码
+     *
+     * @param $phone
+     * @param $password
+     * @return bool|int
+     */
+    public function setPassword($phone, $password)
+    {
+        return Users::where('phone', '=', $phone)->update([
+            'password'  => $this->password($password)
+        ]);
     }
 }

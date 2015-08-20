@@ -25,6 +25,11 @@ class UserController extends Controller
         });
     }
 
+    public function postResetAvatar(Request $request)
+    {
+
+    }
+
     /**
      * 重置密码
      *
@@ -108,7 +113,10 @@ class UserController extends Controller
 
         if ($auth->login($request))
         {
-            $user = $auth->getUser()->toArray();
+            $user = [$auth->getUser()->toArray()];
+            fix_avatar($user);
+            $user = $user[0];
+
             unset($user['rid']);
             unset($user['password']);
 

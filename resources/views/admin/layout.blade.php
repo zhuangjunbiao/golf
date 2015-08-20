@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
 
     <title>@yield('title') - {{Lang::get('global.web_name')}}</title>
 
@@ -22,11 +23,10 @@
 
 @yield('body')
 
-@section('script')
 <script src="{{url_plugin('jquery/dist/jquery.min.js')}}"></script>
 <script src="{{url_plugin('bootstrap/dist/js/bootstrap.min.js')}}"></script>
 <script src="{{url_plugin('metisMenu/dist/metisMenu.min.js')}}"></script>
 <script src="{{url_static('admin/js/sb-admin-2.js')}}"></script>
-@show
+@yield('script')
 </body>
 </html>

@@ -27,12 +27,9 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth' => Middleware\Authenticate::class,
-        'auth.basic' => AuthenticateWithBasicAuth::class,
-        'guest' => Middleware\RedirectIfAuthenticated::class,
-
+        'auth'      => Middleware\Authenticate::class,
+        'guest'     => Middleware\RedirectIfAuthenticated::class,
         'csrf'      => Middleware\VerifyCsrfToken::class,
-
         'api.key'   => Middleware\ApiKeyMiddleware::class,
         'rbac'      => Middleware\RbacMiddleware::class,
     ];

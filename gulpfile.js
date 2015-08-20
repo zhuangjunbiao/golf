@@ -12,5 +12,14 @@ var elixir = require('laravel-elixir');
  */
 
 elixir(function(mix) {
-    mix.sass('app.scss');
+    var jsAdminGolf = 'admin/golf.js';
+    var pathStatic = 'public/static/';
+
+    mix.scripts([jsAdminGolf, 'admin/auth/forget_password.js'], pathStatic+'admin/js/auth/forget_password.js')
+        .scripts([jsAdminGolf, 'admin/auth/set_password.js'], pathStatic+'admin/js/auth/set_password.js');
+
+    mix.version([
+        pathStatic+'admin/js/auth/forget_password.js',
+        pathStatic+'admin/js/auth/set_password.js'
+    ]);
 });

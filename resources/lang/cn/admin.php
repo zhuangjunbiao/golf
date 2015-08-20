@@ -14,6 +14,13 @@ return [
     */
 
     'auth'  => [
-        'login_failed'      => '用户名或密码错误'
+        'login_failed'      => '用户名或密码错误',
+        'sms_send_failed'   => '短信发送失败',
+
+        'reset'     => [
+            'success'   => '重置成功',
+            'failed'    => '重置失败'
+        ],
+
     ]
 ];

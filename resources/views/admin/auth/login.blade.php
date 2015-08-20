@@ -24,7 +24,7 @@
 
                         <fieldset>
                             <div class="form-group">
-                                <input class="form-control" placeholder="用户名" name="user_name" type="text" autofocus>
+                                <input class="form-control" placeholder="手机号" name="phone" type="text" autofocus>
                             </div>
                             <div class="form-group">
                                 <input class="form-control" placeholder="密码" name="password" type="password">
@@ -43,4 +43,8 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('script')
+<script src="{{url_static('admin/js/login.js')}}"></script>
 @endsection

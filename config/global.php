@@ -5,6 +5,9 @@ return [
     'api_domain'    => env('API_DOMAIN'),
     'admin_domain'  => env('ADMIN_DOMAIN'),
 
+    // 头像主机
+    'avatar_host'   => env('AVATAR_HOST'),
+
     // 短信超时时间(分钟)
     'sms_out_time'  => intval(env('SMS_OUT_TIME', 30)),
 

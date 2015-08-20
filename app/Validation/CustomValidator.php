@@ -25,9 +25,9 @@ class CustomValidator extends Validator {
      */
     public function validateSmsCode($attribute, $value, $parameters)
     {
-        if (count($parameters) < 2)
+        if (empty($parameters[1]))
         {
-            return false;
+            $parameters[1] = \Session::getId();
         }
 
         return OAuth::verifySMSCode($parameters[0], $value, $parameters[1]);

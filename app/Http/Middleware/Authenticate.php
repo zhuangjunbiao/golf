@@ -2,25 +2,22 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\OAuth;
 use Closure;
-use Illuminate\Contracts\Auth\Guard;
 
 class Authenticate
 {
     /**
-     * The Guard implementation.
-     *
-     * @var Guard
+     * @var OAuth
      */
     protected $auth;
 
     /**
      * Create a new filter instance.
      *
-     * @param  Guard  $auth
-     * @return void
+     * @param  OAuth  $auth
      */
-    public function __construct(Guard $auth)
+    public function __construct(OAuth $auth)
     {
         $this->auth = $auth;
     }
@@ -34,13 +31,14 @@ class Authenticate
      */
     public function handle($request, Closure $next)
     {
-        if ($this->auth->guest()) {
-            if ($request->ajax()) {
-                return response('Unauthorized.', 401);
-            } else {
-                return redirect()->guest('auth/login');
-            }
-        }
+        // TODO 验证用户是否登录，没登录不给访问
+//        if ($this->auth->guest()) {
+//            if ($request->ajax()) {
+//                return response('Unauthorized.', 401);
+//            } else {
+//                return redirect()->guest('auth/login');
+//            }
+//        }
 
         return $next($request);
     }

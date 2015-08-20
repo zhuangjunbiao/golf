@@ -1,5 +1,35 @@
 <?php
 
+if (!function_exists('fix_avatar'))
+{
+    /**
+     * 转换头像
+     *
+     * @param array $data
+     * @return array
+     */
+    function fix_avatar(array &$data)
+    {
+        $avatar_host = config('global.avatar_host');
+        foreach ($data as $k => $row)
+        {
+            if (!isset($row['avatar']) || empty($row['avatar']))
+            {
+                $row['avatar'] = "{$avatar_host}/global/avatar.gif";
+            }
+            else
+            {
+                $row['avatar'] = "{$avatar_host}/{$row['avatar']}";
+                $row['avatar_little'] = "{$avatar_host}/64_64/{$row['avatar']}";
+            }
+
+            $data[$k] = $row;
+        }
+
+        return $data;
+    }
+}
+
 if (!function_exists('fix_apps'))
 {
     /**
