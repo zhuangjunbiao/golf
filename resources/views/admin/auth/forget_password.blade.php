@@ -1,8 +1,6 @@
 @extends('admin.layout')
 
-@section('title')
-    找回密码
-@endsection
+@section('title', '找回密码')
 
 @section('body')
 <div class="container">

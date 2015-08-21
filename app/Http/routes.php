@@ -11,37 +11,52 @@
 |
 */
 
+/*
+ * 注：不要在路由中写闭包，否则权限验证可能会失效
+ */
+
+// 通用测试
+if (config('app.debug'))
+{
+    Route::resource('test', 'TestController');
+}
+
 // API组
 Route::group([
-        'domain' => env('API_DOMAIN'),
-        'middleware' => 'api.key'
-    ], function() {
+    'domain' => env('API_DOMAIN'),
+    'middleware' => 'api.key'
+], function() {
 
-        // API调试工具
-        Route::controller('test', 'Test\ApiController');
+    // API调试工具
+    Route::controller('test', 'Test\ApiController');
 
-        // 版本1
-        Route::group(['prefix' => 'v1'], function() {
-            // 控制器组
-            Route::controllers([
-                'config'    => 'Api1\ConfigController',
-                'user'      => 'Api1\UserController'
-            ]);
-        });
-    }
-);
+    // 版本1
+    Route::group(['prefix' => 'v1'], function() {
+        // 控制器组
+        Route::controllers([
+            'config'    => 'Api1\ConfigController',
+            'user'      => 'Api1\UserController'
+        ]);
+    });
+});
 
 // 后台组
 Route::group([
-        'domain'        => env('ADMIN_DOMAIN'),
-        'middleware'    => ['csrf', 'rbac']
-    ], function() {
-        Route::get('jump', 'Admin\Controller@getJump');
+    'domain'        => env('ADMIN_DOMAIN'),
+    'middleware'    => ['csrf', 'rbac']
+], function() {
 
-        // 控制器组
-        Route::controllers([
-            'auth'      => 'Admin\AuthController',
-            '/'         => 'Admin\IndexController'
-        ]);
-    }
-);
+    // RESTful 控制器组
+    Route::resources([
+        'user'      => 'Admin\UserManagerController',
+        'app'       => 'Admin\AppManagerController',
+        'options'   => 'Admin\OptionsManagerController',
+        'node'      => 'Admin\NodeManagerController',
+    ]);
+
+    // 控制器组
+    Route::controllers([
+        'auth'      => 'Admin\AuthController',
+        '/'         => 'Admin\IndexController'
+    ]);
+});

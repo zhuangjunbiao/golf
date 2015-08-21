@@ -1,11 +1,12 @@
-<?php
+<?php namespace App\Models;
 
-namespace App\Models;
+use App\Library\QueryBuilder;
+use Eloquent;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Role extends Model
+class Role extends Eloquent
 {
+    use QueryBuilder;
+
     protected $table = 'role';
 
     protected $primaryKey = 'rid';

@@ -5,27 +5,8 @@ namespace App\Http\Controllers\Admin;
 use Illuminate\Http\Exception\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Session;
 
 class Controller extends \App\Http\Controllers\Controller {
-
-    /**
-     * 页面跳转中间页
-     *
-     * @return \Illuminate\View\View
-     */
-    public function getJump()
-    {
-        if (Session::get('jump'))
-        {
-            Session::forget('jump');
-            return view('admin.jump');
-        }
-        else
-        {
-            return view('errors.404');
-        }
-    }
 
     /**
      * Validate the given request with the given rules.

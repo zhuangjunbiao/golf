@@ -1,12 +1,13 @@
 <?php namespace App\Services;
 
-use App\Library\Console;
 use App\Library\SMS;
+use App\Models\Node;
 use App\Models\RoleNode;
 use App\Models\Users;
 use Session;
 use Cache;
 use Lang;
+use Route;
 
 class OAuth {
 
@@ -131,8 +132,21 @@ class OAuth {
      */
     public function permissions($request)
     {
-        $nodes = array_merge($this->nodes(), $this->getExcept());
-        foreach ($nodes as $node)
+        $action = Route::current()->getAction();
+        $namespace = $action['namespace'];
+        $actionName = $action['controller'];
+
+        // 验证节点
+        foreach ($this->nodes() as $node)
+        {
+            if ($actionName == $namespace.$node || $node == '*')
+            {
+                return true;
+            }
+        }
+
+        // 验证过滤地址
+        foreach ($this->getExcept() as $node)
         {
             if ($request->is($node) || $node == '*')
             {
@@ -162,6 +176,7 @@ class OAuth {
 
     /**
      * 可访问节点
+     *
      * @return array
      */
     private function nodes()
@@ -169,6 +184,12 @@ class OAuth {
         $rid = empty($this->user) ? null : $this->user->getAttribute('rid');
         $key = 'rbac_role_node';
         $cache = Cache::get($key);
+
+        if (config('app.debug'))
+        {
+            $cache = null;
+        }
+
         if (empty($cache) || !isset($cache[$rid]))
         {
             $nodes = RoleNode::model()->getRoleNodes($rid);
@@ -186,13 +207,46 @@ class OAuth {
             {
                 foreach ($nodes as $node)
                 {
-                    array_push($tmp, $node['nname']);
+                    array_push($tmp, $node['uses']);
                 }
 
             }
 
             $cache[$rid] = $tmp;
-            Cache::put($key, $cache, 24*60);
+            Cache::forever($key, $cache);
+        }
+
+        return $cache[$rid];
+    }
+
+    /**
+     * 获取数据库中节点
+     *
+     * @return array
+     */
+    public function getUses()
+    {
+        $rid = empty($this->user) ? null : $this->user->getAttribute('rid');
+        $key = 'rbac_role_uses';
+        $cache = Cache::get($key);
+
+        if (config('app.debug'))
+        {
+            $cache = null;
+        }
+
+        if (empty($cache) || !isset($cache[$rid]))
+        {
+            $uses = Node::model()->getUses($rid);
+            if (empty($uses))
+            {
+                return [];
+            }
+
+            $uses = $this->fixUses($uses);
+
+            $cache[$rid] = $uses;
+            Cache::forever($key, $cache);
         }
 
         return $cache[$rid];
@@ -327,7 +381,7 @@ class OAuth {
         // 调试模式下只打印短信，不发送信息
         if (config('app.debug'))
         {
-            Console::log("{$phone} ： {$code}");
+            console("{$phone} ： {$code}");
         }
 
         SMS::send($phone, $content);
@@ -475,5 +529,29 @@ class OAuth {
         return Users::where('phone', '=', $phone)->update([
             'password'  => $this->password($password)
         ]);
+    }
+
+    /**
+     * 转换节点成树状结构
+     *
+     * @param $uses
+     * @param int $pid
+     * @return array
+     */
+    private function fixUses($uses, $pid=0)
+    {
+        $tmp = array();
+
+        foreach ($uses as $k => $v)
+        {
+            $i = count($tmp);
+            if ($pid == $v['pid'] && $v['display'] == 1)
+            {
+                $tmp[$i] = $v;
+                $tmp[$i]['sub'] = $this->fixUses($uses, $v['nid']);
+            }
+        }
+
+        return $tmp;
     }
 }

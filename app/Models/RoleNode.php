@@ -1,12 +1,10 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use App\Library\QueryBuilder;
-use Eloquent as Model;
+use Eloquent;
 use Illuminate\Database\Query\JoinClause;
 
-class RoleNode extends Model
+class RoleNode extends Eloquent
 {
     use QueryBuilder;
 
@@ -25,35 +23,32 @@ class RoleNode extends Model
      */
     public function getRoleNodes($rid)
     {
-        $rows = $this->qSelect('RN.*', 'N.nname')
+        $rows = $this->qSelect('RN.*', 'N.nname', 'N.uses', 'N.pid')
             ->fromAlias('RN')
             ->leftJoinNode()
             ->qWhere('RN.rid', '=', $rid)
             ->qGetToArray();
+
         return $rows;
     }
 
     /**
      * 关联node
      * @param int|null $status node.status值，Null表示不将status作为条件
-     * @param int|null $type node.type值，Null表示不将type作为条件
      * @return $this
      */
-    private function leftJoinNode($status=1, $type=3)
+    private function leftJoinNode($status=1)
     {
         $N = Node::$tableName.' AS N';
         $this->q()
-            ->leftJoin($N, function(JoinClause $join) use ($status, $type) {
+            ->leftJoin($N, function(JoinClause $join) use ($status) {
                 $join->on('N.nid', '=', 'RN.nid');
                 if (!is_null($status))
                 {
                     $join->where('N.status', '=', $status);
                 }
-                if (!is_null($type))
-                {
-                    $join->where('N.type', '=', 3);
-                }
             });
+
         return $this;
     }
 }

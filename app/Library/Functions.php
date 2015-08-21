@@ -1,5 +1,50 @@
 <?php
 
+if (!function_exists('fix_uses'))
+{
+    /**
+     * 转换SB Admin导航
+     *
+     * @param $uses
+     * @param int $level
+     * @return string
+     */
+    function fix_sb_admin_nav($uses, $level=1)
+    {
+        $tmp = '';
+        if ($level == 1)
+        {
+            $nav_level = 'nav-second-level';
+        }
+        elseif ($level == 2)
+        {
+            $nav_level = 'nav-third-level';
+        }
+
+        foreach ($uses as $k => $v)
+        {
+            $url = url($v['access']);
+            $name = $v['nname'];
+
+            if (empty($v['sub']))
+            {
+                $tmp .= '<li><a href="'.$url.'">'.$name.'</a></li>';
+            }
+            else
+            {
+                $tmp .= '<li>
+                    <a href="'.$url.'">'.$name.'<span class="fa arrow"></span></a>
+                    <ul class="nav '.$nav_level.'">
+                        '.fix_sb_admin_nav($v['sub'], $level + 1).'
+                    </ul>
+                </li>';
+            }
+        }
+
+        return $tmp;
+    }
+}
+
 if (!function_exists('fix_avatar'))
 {
     /**
@@ -111,11 +156,10 @@ if (!function_exists('url_jump'))
 {
     /**
      * 跳转中间页
-     *
      * @param $msg
      * @param string $forward
      * @param int $time
-     * @return \Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse
+     * @return $this
      */
     function url_jump($msg, $forward='/', $time=3)
     {
