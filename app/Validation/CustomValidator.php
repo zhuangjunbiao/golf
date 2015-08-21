@@ -59,6 +59,34 @@ class CustomValidator extends Validator {
     }
 
     /**
+     * 验证用户密码
+     *
+     * @param $attribute
+     * @param $value
+     * @return bool
+     */
+    public function validateUserPassword($attribute, $value)
+    {
+        $auth = new OAuth();
+        $password = $auth->getUser() ? $auth->getUser()->getAttribute('password') : null;
+        return OAuth::password($value) == $password;
+    }
+
+    /**
+     * 验证手机号与当前登录用户的手机号是否一致
+     *
+     * @param $attribute
+     * @param $value
+     * @return bool
+     */
+    public function validateOauthPhone($attribute, $value)
+    {
+        $auth = new OAuth();
+        $phone = $auth->getUser() ? $auth->getUser()->getAttribute('phone') : null;
+        return $value == $phone;
+    }
+
+    /**
      * 验证用户是否被删除
      *
      * @param $attribute

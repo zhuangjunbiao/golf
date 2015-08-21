@@ -107,6 +107,27 @@ if (!function_exists('rand_str'))
     }
 }
 
+if (!function_exists('url_jump'))
+{
+    /**
+     * 跳转中间页
+     *
+     * @param $msg
+     * @param string $forward
+     * @param int $time
+     * @return \Illuminate\Routing\Redirector|\Illuminate\Http\RedirectResponse
+     */
+    function url_jump($msg, $forward='/', $time=3)
+    {
+        Session::put('jump', true);
+        return redirect()->to('jump')->withInput([
+            'msg'   => $msg,
+            'forward'   => $forward,
+            'time'  => $time,
+        ]);
+    }
+}
+
 if (!function_exists('url_plugin'))
 {
     /**

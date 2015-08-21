@@ -33,16 +33,47 @@ class AuthController extends Controller
         });
     }
 
-    // TODO 修改密码
-    public function getModifyPassword(Request $request)
+    /**
+     * 修改密码
+     *
+     * @return \Illuminate\View\View
+     */
+    public function getModifyPassword()
     {
-
+        return view('admin.auth.modify_password');
     }
 
-    // TODO 修改密码逻辑
-    public function postModifyPassword(Request $request)
+    /**
+     * 修改密码逻辑
+     *
+     * @param Request $request
+     * @param OAuth $auth
+     * @return $this|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
+    public function postModifyPassword(Request $request, OAuth $auth)
     {
+        $this->validate($request, [
+            'sms_code'      => ['required', "sms_code:{$request->input('phone')},"],
+            'phone'         => ['required', 'oauth_phone', 'user_deny'],
+            'now_password'  => ['required', 'user_password'],
+            'password'      => ['required', 'length:6,18', 'confirmed']
+        ]);
 
+        try
+        {
+            $phone = $auth->getUser()->getAttribute('phone');
+            $password = $request->input('password');
+            $auth->setPassword($phone, $password);
+            $auth->logout();
+
+            // 重置成功
+            return url_jump(Lang::get('admin.auth.reset.success'), url('/auth/login'), 1);
+        }
+        catch (\Exception $e)
+        {
+            // 重置失败
+            return redirect()->back()->withErrors([Lang::get('admin.auth.reset.failed')]);
+        }
     }
 
     /**
@@ -146,6 +177,7 @@ class AuthController extends Controller
      * @param Request $request
      * @param OAuth $auth
      * @return $this|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     * @throws \Exception
      */
     public function postSetPassword(Request $request, OAuth $auth)
     {
@@ -164,21 +196,20 @@ class AuthController extends Controller
 
         try
         {
-            if ($auth->setPassword($phone, $password))
-            {
-                Session::forget('phone');
-                Session::forget('forget_password');
+            $auth->setPassword($phone, $password);
+            Session::forget('phone');
+            Session::forget('forget_password');
 
-                // 重置成功
-                return redirect()->to(url('/auth/login'))->withInput(['msg' => Lang::get('admin.auth.reset.success')]);
-            }
-            else
-            {
-                throw new \Exception;
-            }
+            // 重置成功
+            return url_jump(Lang::get('admin.auth.reset.success'), url('/auth/login'), 1);
         }
         catch (\Exception $e)
         {
+            if (config('app.debug'))
+            {
+                throw $e;
+            }
+
             // 重置失败
             return redirect()->back()->withErrors([Lang::get('admin.auth.reset.failed')]);
         }

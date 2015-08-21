@@ -16,6 +16,7 @@ class OAuth {
      * @var array
      */
     protected $except = [
+        'jump',
         'auth/forget-password',
         'auth/sms-code',
         'auth/set-password',

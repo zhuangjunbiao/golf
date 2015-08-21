@@ -36,6 +36,8 @@ Route::group([
         'domain'        => env('ADMIN_DOMAIN'),
         'middleware'    => ['csrf', 'rbac']
     ], function() {
+        Route::get('jump', 'Admin\Controller@getJump');
+
         // 控制器组
         Route::controllers([
             'auth'      => 'Admin\AuthController',

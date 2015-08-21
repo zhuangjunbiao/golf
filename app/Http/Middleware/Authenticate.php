@@ -31,14 +31,10 @@ class Authenticate
      */
     public function handle($request, Closure $next)
     {
-        // TODO 验证用户是否登录，没登录不给访问
-//        if ($this->auth->guest()) {
-//            if ($request->ajax()) {
-//                return response('Unauthorized.', 401);
-//            } else {
-//                return redirect()->guest('auth/login');
-//            }
-//        }
+        if (!$this->auth->isLogin())
+        {
+            return $this->auth->defaultGateway($request);
+        }
 
         return $next($request);
     }
